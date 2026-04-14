@@ -318,7 +318,9 @@ a { color: var(--teal); text-decoration: none; }
 }
 
 .page.active {
-  opacity: 1; pointer-events: auto;
+  display: flex;
+  opacity: 1; 
+  pointer-events: auto;
   transform: translateY(0);
 }
 
@@ -326,13 +328,14 @@ a { color: var(--teal); text-decoration: none; }
 
 /* Bottom Nav */
 .bottom-nav {
-  height: var(--nav-h);
-  padding-bottom: var(--safe-bottom);
-  background: rgba(13,13,36,0.95);
-  backdrop-filter: blur(16px);
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  display: flex;
+  background: rgba(13, 13, 30, 0.85);
+  backdrop-filter: blur(28px);
   border-top: 1px solid var(--border);
-  display: flex; align-items: stretch;
-  flex-shrink: 0; position: relative; z-index: 10;
+  padding-bottom: var(--safe-bottom);
+  flex-shrink: 0;
+  position: relative; z-index: 100;
 }
 
 .nav-btn {
