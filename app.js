@@ -137,7 +137,11 @@ const App = (() => {
     // Activate target
     const pageEl = document.getElementById('page-' + page);
     const navEl  = document.getElementById('nav-' + page);
-    if (pageEl) pageEl.classList.add('active');
+    if (pageEl) {
+      pageEl.classList.add('active');
+      const scroller = pageEl.querySelector('.scroll-content');
+      if (scroller) scroller.scrollTop = 0;
+    }
     if (navEl)  navEl.classList.add('active');
 
     S.currentPage = page;
@@ -285,8 +289,8 @@ const App = (() => {
     const list = document.getElementById('low-list');
     if (!items.length) { sec.style.display = 'none'; return; }
     sec.style.display = 'block';
-    list.innerHTML = items.map(it => `
-      <div class="low-item">
+    list.innerHTML = items.map((it, idx) => `
+      <div class="low-item animate-in stagger-${(idx % 5) + 1}">
         <div class="low-info">
           <div class="low-code">${esc(it['Mã NL'])}</div>
           <div class="low-name">${esc(it['Tên NL'])}</div>
@@ -303,13 +307,14 @@ const App = (() => {
       list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Chưa có giao dịch</div></div>`;
       return;
     }
-    list.innerHTML = history.map(h => {
+    list.innerHTML = history.map((h, idx) => {
       const cls  = typeClass(h['Loại']);
       const icon = typeIcon(h['Loại']);
       const sign = h['Loại'] === 'NHAP' ? '+' : (h['Loại'] === 'XUAT' ? '-' : '');
       const time = h['Thời gian'] ? fmtTime(new Date(h['Thời gian'])) : '—';
+      const stagger = idx < 10 ? `stagger-${(idx % 5) + 1}` : '';
       return `
-        <div class="activity-item">
+        <div class="activity-item animate-in ${stagger}">
           <div class="act-dot ${cls}">${icon}</div>
           <div class="act-body">
             <div class="act-name">${esc(h['Tên NL'] || h['Mã NL'])}</div>
@@ -569,13 +574,15 @@ const App = (() => {
       return;
     }
 
-    list.innerHTML = items.map(it => {
+    list.innerHTML = items.map((it, idx) => {
       const isLow  = it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu'];
       const isCrit = it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu'] * 0.5;
       const stockCls = isCrit ? 'crit' : (isLow ? 'low' : 'ok');
       const initials = it['Mã NL'].slice(0,3).toUpperCase();
+      const staggerCls = idx < 10 ? `stagger-${(idx % 5) + 1}` : '';
+      
       return `
-        <div class="inv-item ${isLow ? 'low' : ''}" onclick="App.showItemModal('${esc(it['Mã NL'])}')">
+        <div class="inv-item animate-in ${staggerCls} ${isLow ? 'low' : ''}" onclick="App.showItemModal('${esc(it['Mã NL'])}')">
           <div class="inv-code-badge">
             <span class="icb-code">${esc(initials)}</span>
             <span class="icb-icon">📦</span>
@@ -988,11 +995,25 @@ const App = (() => {
 
   let _toastTimer;
   function toast(msg, type = 'info') {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.className   = 'toast show ' + type;
-    clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3500);
+    const container = document.getElementById('toast');
+    if (!container) return;
+    
+    const item = document.createElement('div');
+    item.className = `toast-item ${type}`;
+    
+    let icon = '🔔';
+    if (type === 'success') icon = '✅';
+    if (type === 'error')   icon = '❌';
+    if (type === 'info')    icon = 'ℹ️';
+
+    item.innerHTML = `<span>${icon}</span> <span>${esc(msg)}</span>`;
+    container.appendChild(item);
+
+    // Auto remove
+    setTimeout(() => {
+      item.style.animation = 'toast-out 0.3s ease-in forwards';
+      setTimeout(() => item.remove(), 300);
+    }, 3500);
   }
 
   function setBtnLoading(btn, loading) {
