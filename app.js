@@ -353,13 +353,18 @@ const App = (() => {
     el.innerHTML = '';
 
     try {
-      const scanner = new Html5Qrcode(readerId, { verbose: false });
+      const scanner = new Html5Qrcode(readerId, { 
+        verbose: false,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
+      });
       S.scanners[ctx] = scanner;
       S.scannerActive[ctx] = false;
 
       scanner.start(
         { facingMode: 'environment' },
-        { fps: 12, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+        { fps: 20, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
         (decodedText) => handleScan(ctx, decodedText),
         () => {}
       ).then(() => {
@@ -390,15 +395,22 @@ const App = (() => {
 
     const trimmed = code.trim().toUpperCase();
 
+    // Flash effect for feedback
+    const box = document.getElementById(ctx + '-camera-box');
+    if (box) {
+      box.classList.add('scan-success');
+      setTimeout(() => box.classList.remove('scan-success'), 400);
+    }
+
     if (ctx === 'scan')   await lookupItem('scan', trimmed);
     if (ctx === 'import') await lookupItem('import', trimmed);
 
-    // Resume scanner after 3 seconds
+    // Resume scanner after 2 seconds
     setTimeout(() => {
       if (S.scanners[ctx]) {
         try { S.scanners[ctx].resume(); } catch(e) {}
       }
-    }, 3000);
+    }, 2000);
   }
 
   /* ─────────────────────────────────────
@@ -406,6 +418,16 @@ const App = (() => {
   ───────────────────────────────────── */
   async function lookupItem(ctx, code) {
     if (!code) return;
+    
+    // 1. Instant Local Lookup
+    const local = S.allItems.find(it => it['Mã NL'].toUpperCase() === code.toUpperCase());
+    if (local) {
+      if (ctx === 'scan')   showScanResult(local);
+      if (ctx === 'import') showImportResult(local);
+      return; 
+    }
+
+    // 2. Fallback to API if not in cache
     try {
       const res = await apiCall({ action: 'getItem', code });
       if (res.error) { toast(res.error, 'error'); return; }
