@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Quản lý tồn kho thông minh bằng mã QR — KhoQR" />
+  <meta name="theme-color" content="#07071a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <title>KhoQR — Quản Lý Tồn Kho</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     SPLASH SCREEN
+════════════════════════════════════════════════ -->
+<div id="splash" class="splash">
+  <div class="splash-inner">
+    <div class="splash-logo-wrap">
+      <div class="splash-icon-ring">
+        <svg viewBox="0 0 60 60" width="44" height="44" fill="none">
+          <rect x="4" y="4" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3"/>
+          <rect x="34" y="4" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3"/>
+          <rect x="4" y="34" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3"/>
+          <rect x="40" y="40" width="10" height="10" rx="1" fill="#00e5b0"/>
+          <rect x="34" y="34" width="4" height="4" fill="#00e5b0"/>
+          <rect x="34" y="52" width="4" height="4" fill="#00e5b0"/>
+          <rect x="52" y="34" width="4" height="4" fill="#00e5b0"/>
+          <rect x="10" y="10" width="10" height="10" rx="1" fill="#00e5b0"/>
+          <rect x="40" y="10" width="10" height="10" rx="1" fill="#00e5b0"/>
+          <rect x="10" y="40" width="10" height="10" rx="1" fill="#00e5b0"/>
+        </svg>
+      </div>
+    </div>
+    <h1 class="splash-title">KhoQR</h1>
+    <p class="splash-sub">Quản Lý Tồn Kho Thông Minh</p>
+    <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SETUP MODAL (lần đầu dùng)
+════════════════════════════════════════════════ -->
+<div id="setup-overlay" class="overlay" style="display:none">
+  <div class="modal setup-modal">
+    <div class="setup-head">
+      <div class="setup-logo">
+        <svg viewBox="0 0 60 60" width="36" height="36" fill="none">
+          <rect x="4" y="4" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3"/>
+          <rect x="34" y="4" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3"/>
+          <rect x="4" y="34" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3"/>
+          <rect x="40" y="40" width="10" height="10" rx="1" fill="#00e5b0"/>
+          <rect x="10" y="10" width="10" height="10" rx="1" fill="#00e5b0"/>
+          <rect x="40" y="10" width="10" height="10" rx="1" fill="#00e5b0"/>
+          <rect x="10" y="40" width="10" height="10" rx="1" fill="#00e5b0"/>
+        </svg>
+        <span>KhoQR</span>
+      </div>
+      <h2>Thiết Lập Kết Nối</h2>
+      <p>Nhập thông tin để kết nối với Google Sheets của bạn</p>
+    </div>
+    <div class="setup-body">
+      <div class="field-group">
+        <label for="setup-store">Tên Cửa Hàng</label>
+        <input id="setup-store" type="text" placeholder="VD: Quán Ăn Ngon ABC" autocomplete="off" />
+      </div>
+      <div class="field-group">
+        <label for="setup-url">Google Apps Script URL <span class="required">*</span></label>
+        <input id="setup-url" type="url" placeholder="https://script.google.com/macros/s/..." autocomplete="off" />
+        <div class="field-hint">Deploy GAS → Web App → Copy URL tại đây</div>
+      </div>
+      <button id="setup-btn" class="btn btn-primary btn-full" onclick="App.saveSetup()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Bắt Đầu Sử Dụng
+      </button>
+      <button class="btn btn-ghost btn-full" onclick="App.useDemo()">
+        Dùng Chế Độ Demo (không cần GAS)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════ -->
+<div id="app" class="app" style="display:none">
+
+  <!-- Header -->
+  <header class="app-header" id="app-header">
+    <div class="header-left">
+      <div class="header-logo-icon">
+        <svg viewBox="0 0 60 60" width="28" height="28" fill="none">
+          <rect x="4" y="4" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3.5"/>
+          <rect x="34" y="4" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3.5"/>
+          <rect x="4" y="34" width="22" height="22" rx="3" stroke="#00e5b0" stroke-width="3.5"/>
+          <rect x="40" y="40" width="10" height="10" rx="1.5" fill="#00e5b0"/>
+          <rect x="10" y="10" width="10" height="10" rx="1.5" fill="#00e5b0"/>
+          <rect x="40" y="10" width="10" height="10" rx="1.5" fill="#00e5b0"/>
+          <rect x="10" y="40" width="10" height="10" rx="1.5" fill="#00e5b0"/>
+        </svg>
+      </div>
+      <div>
+        <div class="header-title" id="header-store-name">KhoQR</div>
+        <div class="header-time" id="header-time">--:--</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="btn-refresh" onclick="App.refreshData()" title="Làm mới dữ liệu">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+      </button>
+      <button class="icon-btn" onclick="App.openSettings()" title="Cài đặt">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Pages Container -->
+  <main class="pages" id="pages">
+
+    <!-- ────────────────────────────────────
+         PAGE: DASHBOARD
+    ──────────────────────────────────── -->
+    <section id="page-dashboard" class="page active">
+      <div class="scroll-content">
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card teal">
+            <div class="stat-val" id="s-total">—</div>
+            <div class="stat-label">Tổng NL</div>
+            <div class="stat-icon-bg">📦</div>
+          </div>
+          <div class="stat-card amber" id="s-low-card">
+            <div class="stat-val" id="s-low">—</div>
+            <div class="stat-label">Sắp Hết</div>
+            <div class="stat-icon-bg">⚠️</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-val" id="s-ok">—</div>
+            <div class="stat-label">Ổn Định</div>
+            <div class="stat-icon-bg">✅</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-val" id="s-today">—</div>
+            <div class="stat-label">GD Hôm Nay</div>
+            <div class="stat-icon-bg">📋</div>
+          </div>
+        </div>
+
+        <!-- Low Stock Alert -->
+        <div id="low-section" style="display:none">
+          <div class="section-header warn-header">
+            <span class="section-icon">⚠️</span>
+            <span class="section-title">Cần Đặt Hàng</span>
+          </div>
+          <div id="low-list" class="card-list"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+          <span class="section-icon">⚡</span>
+          <span class="section-title">Thao Tác Nhanh</span>
+        </div>
+        <div class="quick-grid">
+          <button class="quick-card q-scan" onclick="App.navigate('scan')">
+            <div class="qc-icon">📷</div>
+            <div class="qc-label">Kiểm Kho</div>
+          </button>
+          <button class="quick-card q-import" onclick="App.navigate('import')">
+            <div class="qc-icon">📥</div>
+            <div class="qc-label">Nhập Kho</div>
+          </button>
+          <button class="quick-card q-list" onclick="App.navigate('list')">
+            <div class="qc-icon">📋</div>
+            <div class="qc-label">Tồn Kho</div>
+          </button>
+          <button class="quick-card q-admin" onclick="App.navigate('admin')">
+            <div class="qc-icon">⚙️</div>
+            <div class="qc-label">Quản Lý</div>
+          </button>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-header">
+          <span class="section-icon">🕐</span>
+          <span class="section-title">Hoạt Động Gần Đây</span>
+        </div>
+        <div id="recent-list" class="activity-list">
+          <div class="loading-placeholder">
+            <div class="spinner"></div>
+            <span>Đang tải...</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────
+         PAGE: QUÉT QR / KIỂM KHO / XUẤT
+    ──────────────────────────────────── -->
+    <section id="page-scan" class="page">
+      <div class="scroll-content">
+
+        <div class="section-header">
+          <span class="section-icon">📷</span>
+          <span class="section-title">Quét Mã QR</span>
+        </div>
+
+        <!-- Mode toggle -->
+        <div class="mode-toggle" id="scan-mode-toggle">
+          <button class="mode-btn active" id="mode-btn-stocktake" onclick="App.setScanMode('stocktake')">
+            🔍 Kiểm Kho
+          </button>
+          <button class="mode-btn" id="mode-btn-export" onclick="App.setScanMode('export')">
+            📤 Xuất Kho
+          </button>
+        </div>
+
+        <!-- Camera Box -->
+        <div class="camera-box" id="scan-camera-box">
+          <div id="qr-reader-scan" class="qr-inner"></div>
+          <div class="cam-frame">
+            <span class="cf cf-tl"></span><span class="cf cf-tr"></span>
+            <span class="cf cf-bl"></span><span class="cf cf-br"></span>
+          </div>
+          <div class="cam-scanline"></div>
+          <div class="cam-hint">Hướng camera vào mã QR trên nhãn</div>
+        </div>
+
+        <div class="or-divider"><span>Hoặc nhập thủ công</span></div>
+
+        <div class="manual-row">
+          <input type="text" id="manual-scan" class="manual-input" placeholder="Nhập mã NL — VD: NL001" />
+          <button class="btn btn-secondary" onclick="App.manualLookup('scan')">Tìm</button>
+        </div>
+
+        <!-- Scan Result -->
+        <div id="scan-result" class="result-card" style="display:none">
+          <div class="result-tag" id="scan-tag">Tìm thấy</div>
+          <button class="result-close" onclick="App.closeScanResult()" aria-label="Đóng">✕</button>
+
+          <div class="result-info-block">
+            <div class="result-code" id="scan-res-code">—</div>
+            <div class="result-name" id="scan-res-name">—</div>
+            <div class="result-meta">
+              <span class="res-meta-item">Đơn vị: <strong id="scan-res-unit">—</strong></span>
+              <span class="res-meta-item">Tồn kho: <strong id="scan-res-stock">—</strong></span>
+            </div>
+          </div>
+
+          <div class="result-form">
+            <div id="form-stocktake">
+              <label class="field-label">Số lượng thực tế kiểm được:</label>
+              <div class="qty-row">
+                <button class="qty-dec" onclick="App.adjQty('scan-qty',-1)">−</button>
+                <input type="number" id="scan-qty" class="qty-field" min="0" step="any" placeholder="0" />
+                <button class="qty-inc" onclick="App.adjQty('scan-qty',1)">+</button>
+              </div>
+            </div>
+            <div id="form-export" style="display:none">
+              <label class="field-label">Số lượng xuất kho:</label>
+              <div class="qty-row">
+                <button class="qty-dec" onclick="App.adjQty('scan-qty',-1)">−</button>
+                <input type="number" id="scan-qty-exp" class="qty-field" min="0" step="any" placeholder="0" />
+                <button class="qty-inc" onclick="App.adjQty('scan-qty-exp',1)">+</button>
+              </div>
+            </div>
+            <input type="text" id="scan-note" class="note-field" placeholder="Ghi chú (tuỳ chọn)..." />
+            <button class="btn btn-primary btn-full" id="scan-save-btn" onclick="App.saveScan()">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span id="scan-save-label">Lưu Kết Quả Kiểm Kho</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────
+         PAGE: NHẬP KHO
+    ──────────────────────────────────── -->
+    <section id="page-import" class="page">
+      <div class="scroll-content">
+
+        <div class="section-header">
+          <span class="section-icon">📥</span>
+          <span class="section-title">Nhập Kho</span>
+        </div>
+
+        <div class="camera-box" id="import-camera-box">
+          <div id="qr-reader-import" class="qr-inner"></div>
+          <div class="cam-frame">
+            <span class="cf cf-tl"></span><span class="cf cf-tr"></span>
+            <span class="cf cf-bl"></span><span class="cf cf-br"></span>
+          </div>
+          <div class="cam-scanline"></div>
+          <div class="cam-hint">Quét QR nguyên liệu cần nhập kho</div>
+        </div>
+
+        <div class="or-divider"><span>Hoặc nhập thủ công</span></div>
+
+        <div class="manual-row">
+          <input type="text" id="manual-import" class="manual-input" placeholder="Nhập mã NL — VD: NL001" />
+          <button class="btn btn-secondary" onclick="App.manualLookup('import')">Tìm</button>
+        </div>
+
+        <div id="import-result" class="result-card success-card" style="display:none">
+          <div class="result-tag tag-success">Nhập Kho</div>
+          <button class="result-close" onclick="App.closeImportResult()" aria-label="Đóng">✕</button>
+
+          <div class="result-info-block">
+            <div class="result-code" id="import-res-code">—</div>
+            <div class="result-name" id="import-res-name">—</div>
+            <div class="result-meta">
+              <span class="res-meta-item">Đơn vị: <strong id="import-res-unit">—</strong></span>
+              <span class="res-meta-item">Tồn hiện tại: <strong id="import-res-stock">—</strong></span>
+            </div>
+          </div>
+
+          <div class="result-form">
+            <label class="field-label">Số lượng nhập vào:</label>
+            <div class="qty-row">
+              <button class="qty-dec" onclick="App.adjQty('import-qty',-1)">−</button>
+              <input type="number" id="import-qty" class="qty-field" min="0" step="any" placeholder="0" />
+              <button class="qty-inc" onclick="App.adjQty('import-qty',1)">+</button>
+            </div>
+            <input type="text" id="import-note" class="note-field" placeholder="Nhà cung cấp / ghi chú..." />
+            <button class="btn btn-success btn-full" onclick="App.saveImport()">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+              Xác Nhận Nhập Kho
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────
+         PAGE: DANH SÁCH TỒN KHO
+    ──────────────────────────────────── -->
+    <section id="page-list" class="page">
+      <div class="scroll-content">
+
+        <div class="section-header">
+          <span class="section-icon">📋</span>
+          <span class="section-title">Danh Sách Tồn Kho</span>
+          <button class="hdr-action-btn" onclick="App.loadAllItems()" title="Làm mới">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input id="list-search" type="text" placeholder="Tìm mã hoặc tên..." oninput="App.filterList()" />
+        </div>
+
+        <div class="pill-row">
+          <button class="pill active" id="pill-all" onclick="App.setFilter('all',this)">Tất Cả</button>
+          <button class="pill" id="pill-low" onclick="App.setFilter('low',this)">⚠️ Sắp Hết</button>
+          <button class="pill" id="pill-ok" onclick="App.setFilter('ok',this)">✅ Ổn Định</button>
+        </div>
+
+        <div id="inventory-list" class="inv-list">
+          <div class="loading-placeholder"><div class="spinner"></div><span>Đang tải...</span></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────
+         PAGE: QUẢN LÝ (Admin)
+    ──────────────────────────────────── -->
+    <section id="page-admin" class="page">
+      <div class="scroll-content">
+
+        <div class="section-header">
+          <span class="section-icon">⚙️</span>
+          <span class="section-title">Quản Lý</span>
+        </div>
+
+        <div class="tab-bar">
+          <button class="tab-btn active" id="tab-add" onclick="App.showTab('add')">➕ Thêm NL</button>
+          <button class="tab-btn" id="tab-qr" onclick="App.showTab('qr')">🔲 Tạo QR</button>
+          <button class="tab-btn" id="tab-hist" onclick="App.showTab('hist')">📋 Lịch Sử</button>
+        </div>
+
+        <!-- Tab: Thêm NL -->
+        <div id="tab-content-add" class="tab-content">
+          <div class="form-card">
+            <h3 class="form-title">Thêm Nguyên Liệu Mới</h3>
+            <div class="field-group">
+              <label>Mã Nguyên Liệu <span class="required">*</span></label>
+              <input id="add-code" type="text" class="form-input" placeholder="VD: NL007" />
+            </div>
+            <div class="field-group">
+              <label>Tên Nguyên Liệu <span class="required">*</span></label>
+              <input id="add-name" type="text" class="form-input" placeholder="VD: Bột năng" />
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Đơn Vị <span class="required">*</span></label>
+                <input id="add-unit" type="text" class="form-input" placeholder="kg, lít, cái..." />
+              </div>
+              <div class="field-group">
+                <label>Tồn Ban Đầu</label>
+                <input id="add-stock" type="number" class="form-input" placeholder="0" min="0" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Tồn Tối Thiểu</label>
+                <input id="add-min" type="number" class="form-input" placeholder="0" min="0" />
+              </div>
+              <div class="field-group">
+                <label>Tồn Tối Đa</label>
+                <input id="add-max" type="number" class="form-input" placeholder="0" min="0" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Ghi Chú</label>
+              <input id="add-note" type="text" class="form-input" placeholder="Ghi chú (tuỳ chọn)..." />
+            </div>
+            <button class="btn btn-primary btn-full" onclick="App.addItem()">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Thêm Nguyên Liệu
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab: Tạo QR -->
+        <div id="tab-content-qr" class="tab-content" style="display:none">
+          <div class="form-card">
+            <h3 class="form-title">Tạo QR Code</h3>
+            <div class="field-group">
+              <label>Chọn Nguyên Liệu</label>
+              <select id="qr-select" class="form-input" onchange="App.genQRFromSelect()">
+                <option value="">— Chọn nguyên liệu —</option>
+              </select>
+            </div>
+            <div class="or-divider"><span>Hoặc nhập mã</span></div>
+            <div class="manual-row">
+              <input type="text" id="qr-code-input" class="manual-input" placeholder="Nhập mã NL thủ công..." />
+              <button class="btn btn-secondary" onclick="App.genQRManual()">Tạo</button>
+            </div>
+
+            <div id="qr-output" style="display:none">
+              <div class="qr-preview-wrap">
+                <div id="qr-canvas" class="qr-canvas"></div>
+                <div class="qr-label-chip">
+                  <div class="qlc-code" id="qr-label-code">—</div>
+                  <div class="qlc-name" id="qr-label-name">—</div>
+                </div>
+              </div>
+              <div class="field-row">
+                <button class="btn btn-secondary" onclick="App.downloadQR()">⬇️ Tải Xuống</button>
+                <button class="btn btn-primary" onclick="App.printQR()">🖨️ In QR</button>
+              </div>
+            </div>
+
+            <div class="section-rule"></div>
+            <h3 class="form-title">In Hàng Loạt</h3>
+            <p class="field-hint">In toàn bộ QR code của các nguyên liệu trong kho để dán lên kệ hoặc bao bì.</p>
+            <button class="btn btn-secondary btn-full" onclick="App.printAllQR()">
+              🖨️ In Tất Cả QR Code
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab: Lịch Sử -->
+        <div id="tab-content-hist" class="tab-content" style="display:none">
+          <div class="field-group">
+            <select id="hist-filter" class="form-input" onchange="App.applyHistFilter()">
+              <option value="">— Tất cả giao dịch —</option>
+              <option value="NHAP">📥 Nhập Kho</option>
+              <option value="XUAT">📤 Xuất Kho</option>
+              <option value="KIEM_KHO">🔍 Kiểm Kho</option>
+            </select>
+          </div>
+          <div id="hist-list" class="hist-list">
+            <div class="loading-placeholder"><div class="spinner"></div><span>Đang tải...</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main><!-- /pages -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-btn active" id="nav-dashboard" onclick="App.navigate('dashboard')">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+      </div>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-btn" id="nav-scan" onclick="App.navigate('scan')">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="6" height="6" rx="1"/>
+          <rect x="15" y="3" width="6" height="6" rx="1"/>
+          <rect x="3" y="15" width="6" height="6" rx="1"/>
+          <line x1="15" y1="15" x2="21" y2="15"/>
+          <line x1="15" y1="18" x2="21" y2="18"/>
+          <line x1="15" y1="21" x2="21" y2="21"/>
+        </svg>
+      </div>
+      <span>Kiểm Kho</span>
+    </button>
+    <button class="nav-btn nav-center-btn" id="nav-import" onclick="App.navigate('import')">
+      <div class="nav-center-circle">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
+      </div>
+      <span>Nhập Kho</span>
+    </button>
+    <button class="nav-btn" id="nav-list" onclick="App.navigate('list')">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <circle cx="3" cy="6" r="1.2" fill="currentColor"/>
+          <circle cx="3" cy="12" r="1.2" fill="currentColor"/>
+          <circle cx="3" cy="18" r="1.2" fill="currentColor"/>
+        </svg>
+      </div>
+      <span>Danh Sách</span>
+    </button>
+    <button class="nav-btn" id="nav-admin" onclick="App.navigate('admin')">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M6 20v-2a6 6 0 0112 0v2"/>
+        </svg>
+      </div>
+      <span>Quản Lý</span>
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- Toast -->
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<!-- Item Detail Modal -->
+<div id="item-overlay" class="overlay" style="display:none">
+  <div class="modal item-modal">
+    <div class="modal-header">
+      <h3 id="item-modal-title">Chi Tiết</h3>
+      <button class="close-btn" onclick="App.closeItemModal()">✕</button>
+    </div>
+    <div id="item-modal-body" class="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="App.deleteItem()">🗑️ Xoá</button>
+      <button class="btn btn-secondary btn-sm" onclick="App.genQRFromModal()">🔲 QR</button>
+      <button class="btn btn-primary btn-sm" onclick="App.openEditModal()">✏️ Sửa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-overlay" class="overlay" style="display:none">
+  <div class="modal edit-modal">
+    <div class="modal-header">
+      <h3>Chỉnh Sửa Nguyên Liệu</h3>
+      <button class="close-btn" onclick="App.closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-code" />
+      <div class="field-group">
+        <label>Tên Nguyên Liệu</label>
+        <input id="edit-name" type="text" class="form-input" />
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>Đơn Vị</label>
+          <input id="edit-unit" type="text" class="form-input" />
+        </div>
+        <div class="field-group">
+          <label>Tồn Tối Thiểu</label>
+          <input id="edit-min" type="number" class="form-input" />
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Ghi Chú</label>
+        <input id="edit-note-val" type="text" class="form-input" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-full" onclick="App.saveEdit()">
+        Lưu Thay Đổi
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-overlay" class="overlay" style="display:none">
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <h3>Cài Đặt</h3>
+      <button class="close-btn" onclick="App.closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Tên Cửa Hàng</label>
+        <input id="settings-store" type="text" class="form-input" />
+      </div>
+      <div class="field-group">
+        <label>Google Apps Script URL</label>
+        <input id="settings-url" type="url" class="form-input" />
+      </div>
+      <div class="field-group">
+        <label>Tên Nhân Viên (mặc định)</label>
+        <input id="settings-staff" type="text" class="form-input" placeholder="VD: Huy Tran" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="App.saveSettings()">Lưu Cài Đặt</button>
+      <div class="section-rule"></div>
+      <button class="btn btn-danger btn-full" onclick="App.resetApp()">🗑️ Xoá Dữ Liệu Cục Bộ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print Area -->
+<div id="print-area" class="print-area"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
