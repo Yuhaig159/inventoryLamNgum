@@ -31,12 +31,12 @@ const App = (() => {
      DEMO DATA (when no GAS)
   ───────────────────────────────────── */
   const DEMO = [
-    { MaNL:'NL001', TenNL:'Gạo trắng',   DonVi:'kg',   TonHienTai:50, TonToiThieu:10, TonToiDa:200, GhiChu:'' },
-    { MaNL:'NL002', TenNL:'Dầu ăn',      DonVi:'lít',  TonHienTai:20, TonToiThieu:5,  TonToiDa:50,  GhiChu:'' },
-    { MaNL:'NL003', TenNL:'Đường trắng', DonVi:'kg',   TonHienTai:8,  TonToiThieu:10, TonToiDa:100, GhiChu:'Sắp hết!' },
-    { MaNL:'NL004', TenNL:'Muối biển',   DonVi:'kg',   TonHienTai:30, TonToiThieu:5,  TonToiDa:80,  GhiChu:'' },
-    { MaNL:'NL005', TenNL:'Bột mì',      DonVi:'kg',   TonHienTai:15, TonToiThieu:8,  TonToiDa:60,  GhiChu:'' },
-    { MaNL:'NL006', TenNL:'Nước mắm',    DonVi:'chai', TonHienTai:6,  TonToiThieu:5,  TonToiDa:30,  GhiChu:'Cần đặt thêm' },
+    { 'Mã NL':'NL001', 'Tên NL':'Gạo trắng',   'Đơn vị':'kg',   'Tồn hiện tại':50, 'Tồn tối thiểu':10, 'Tồn tối đa':200, 'Ghi chú':'' },
+    { 'Mã NL':'NL002', 'Tên NL':'Dầu ăn',      'Đơn vị':'lít',  'Tồn hiện tại':20, 'Tồn tối thiểu':5,  'Tồn tối đa':50,  'Ghi chú':'' },
+    { 'Mã NL':'NL003', 'Tên NL':'Đường trắng', 'Đơn vị':'kg',   'Tồn hiện tại':8,  'Tồn tối thiểu':10, 'Tồn tối đa':100, 'Ghi chú':'Sắp hết!' },
+    { 'Mã NL':'NL004', 'Tên NL':'Muối biển',   'Đơn vị':'kg',   'Tồn hiện tại':30, 'Tồn tối thiểu':5,  'Tồn tối đa':80,  'Ghi chú':'' },
+    { 'Mã NL':'NL005', 'Tên NL':'Bột mì',      'Đơn vị':'kg',   'Tồn hiện tại':15, 'Tồn tối thiểu':8,  'Tồn tối đa':60,  'Ghi chú':'' },
+    { 'Mã NL':'NL006', 'Tên NL':'Nước măm',    'Đơn vị':'chai', 'Tồn hiện tại':6,  'Tồn tối thiểu':5,  'Tồn tối đa':30,  'Ghi chú':'Cần đặt thêm' },
   ];
   const DEMO_HIST = [];
 
@@ -191,47 +191,47 @@ const App = (() => {
     await new Promise(r => setTimeout(r, 300)); // simulate latency
     switch (p.action) {
       case 'getAllItems':  return { success:true, items: S.allItems };
-      case 'getLowStock': return { success:true, items: S.allItems.filter(it => it.TonToiThieu > 0 && it.TonHienTai <= it.TonToiThieu) };
+      case 'getLowStock': return { success:true, items: S.allItems.filter(it => it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu']) };
       case 'getHistory':  return { success:true, history: [...DEMO_HIST].reverse().slice(0, parseInt(p.limit)||50) };
       case 'getItem': {
-        const found = S.allItems.find(it => it.MaNL.toUpperCase() === (p.code||'').toUpperCase());
+        const found = S.allItems.find(it => it['Mã NL'].toUpperCase() === (p.code||'').toUpperCase());
         return found ? { success:true, item: found } : { error: 'Không tìm thấy mã: ' + p.code };
       }
       case 'updateStock': {
-        const it = S.allItems.find(i => i.MaNL.toUpperCase() === (p.code||'').toUpperCase());
+        const it = S.allItems.find(i => i['Mã NL'].toUpperCase() === (p.code||'').toUpperCase());
         if (!it) return { error: 'Không tìm thấy mã' };
-        const prev = it.TonHienTai;
-        it.TonHienTai = p.type==='NHAP' ? prev + Number(p.quantity) : prev - Number(p.quantity);
-        if (it.TonHienTai < 0) { it.TonHienTai = prev; return { error: 'Không đủ tồn kho' }; }
-        DEMO_HIST.push({ ThoiGian: new Date().toISOString(), MaNL: it.MaNL, TenNL: it.TenNL, Loai: p.type, SoLuong: p.quantity, NhanVien: p.staff||'Demo', GhiChu: p.note||'', TonTruoc: prev, TonSau: it.TonHienTai });
+        const prev = it['Tồn hiện tại'];
+        it['Tồn hiện tại'] = p.type==='NHAP' ? prev + Number(p.quantity) : prev - Number(p.quantity);
+        if (it['Tồn hiện tại'] < 0) { it['Tồn hiện tại'] = prev; return { error: 'Không đủ tồn kho' }; }
+        DEMO_HIST.push({ 'Thời gian': new Date().toISOString(), 'Mã NL': it['Mã NL'], 'Tên NL': it['Tên NL'], 'Loại': p.type, 'Số lượng': p.quantity, 'Nhân viên': p.staff||'Demo', 'Ghi chú': p.note||'', 'Tồn trước': prev, 'Tồn sau': it['Tồn hiện tại'] });
         S.todayCount++;
-        return { success:true, newStock: it.TonHienTai, name: it.TenNL, unit: it.DonVi };
+        return { success:true, newStock: it['Tồn hiện tại'], name: it['Tên NL'], unit: it['Đơn vị'] };
       }
       case 'submitStocktake': {
-        const it = S.allItems.find(i => i.MaNL.toUpperCase() === (p.code||'').toUpperCase());
+        const it = S.allItems.find(i => i['Mã NL'].toUpperCase() === (p.code||'').toUpperCase());
         if (!it) return { error: 'Không tìm thấy mã' };
-        const prev = it.TonHienTai;
-        it.TonHienTai = Number(p.actualQuantity);
-        DEMO_HIST.push({ ThoiGian: new Date().toISOString(), MaNL: it.MaNL, TenNL: it.TenNL, Loai:'KIEM_KHO', SoLuong: p.actualQuantity, NhanVien: p.staff||'Demo', GhiChu:'Chênh lệch: '+(Number(p.actualQuantity)-prev), TonTruoc: prev, TonSau: it.TonHienTai });
+        const prev = it['Tồn hiện tại'];
+        it['Tồn hiện tại'] = Number(p.actualQuantity);
+        DEMO_HIST.push({ 'Thời gian': new Date().toISOString(), 'Mã NL': it['Mã NL'], 'Tên NL': it['Tên NL'], 'Loại':'KIEM_KHO', 'Số lượng': p.actualQuantity, 'Nhân viên': p.staff||'Demo', 'Ghi chú':'Chênh lệch: '+(Number(p.actualQuantity)-prev), 'Tồn trước': prev, 'Tồn sau': it['Tồn hiện tại'] });
         S.todayCount++;
-        return { success:true, systemStock: prev, actual: it.TonHienTai, diff: it.TonHienTai - prev };
+        return { success:true, systemStock: prev, actual: it['Tồn hiện tại'], diff: it['Tồn hiện tại'] - prev };
       }
       case 'addItem': {
-        if (S.allItems.find(i => i.MaNL.toUpperCase() === (p.code||'').toUpperCase())) return { error: 'Mã đã tồn tại' };
-        S.allItems.push({ MaNL: p.code.toUpperCase(), TenNL: p.name, DonVi: p.unit, TonHienTai: Number(p.currentStock)||0, TonToiThieu: Number(p.minStock)||0, TonToiDa: Number(p.maxStock)||0, GhiChu: p.note||'' });
+        if (S.allItems.find(i => i['Mã NL'].toUpperCase() === (p.code||'').toUpperCase())) return { error: 'Mã đã tồn tại' };
+        S.allItems.push({ 'Mã NL': p.code.toUpperCase(), 'Tên NL': p.name, 'Đơn vị': p.unit, 'Tồn hiện tại': Number(p.currentStock)||0, 'Tồn tối thiểu': Number(p.minStock)||0, 'Tồn tối đa': Number(p.maxStock)||0, 'Ghi chú': p.note||'' });
         return { success:true };
       }
       case 'updateItem': {
-        const it = S.allItems.find(i => i.MaNL.toUpperCase() === (p.code||'').toUpperCase());
+        const it = S.allItems.find(i => i['Mã NL'].toUpperCase() === (p.code||'').toUpperCase());
         if (!it) return { error: 'Không tìm thấy' };
-        if (p.name !== undefined)     it.TenNL       = p.name;
-        if (p.unit !== undefined)     it.DonVi       = p.unit;
-        if (p.minStock !== undefined) it.TonToiThieu = Number(p.minStock);
-        if (p.note !== undefined)     it.GhiChu      = p.note;
+        if (p.name !== undefined)     it['Tên NL']       = p.name;
+        if (p.unit !== undefined)     it['Đơn vị']       = p.unit;
+        if (p.minStock !== undefined) it['Tồn tối thiểu'] = Number(p.minStock);
+        if (p.note !== undefined)     it['Ghi chú']      = p.note;
         return { success:true };
       }
       case 'deleteItem': {
-        const idx = S.allItems.findIndex(i => i.MaNL.toUpperCase() === (p.code||'').toUpperCase());
+        const idx = S.allItems.findIndex(i => i['Mã NL'].toUpperCase() === (p.code||'').toUpperCase());
         if (idx < 0) return { error: 'Không tìm thấy' };
         S.allItems.splice(idx, 1);
         return { success:true };
@@ -253,7 +253,7 @@ const App = (() => {
       if (allRes.success) {
         S.allItems = allRes.items;
         const total = allRes.items.length;
-        const low   = allRes.items.filter(it => it.TonToiThieu > 0 && it.TonHienTai <= it.TonToiThieu).length;
+        const low   = allRes.items.filter(it => it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu']).length;
         const ok    = total - low;
 
         document.getElementById('s-total').textContent = total;
@@ -261,7 +261,7 @@ const App = (() => {
         document.getElementById('s-ok').textContent    = ok;
 
         // Low stock list
-        const lowItems = allRes.items.filter(it => it.TonToiThieu > 0 && it.TonHienTai <= it.TonToiThieu);
+        const lowItems = allRes.items.filter(it => it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu']);
         renderLowStock(lowItems);
       }
 
@@ -288,9 +288,9 @@ const App = (() => {
     list.innerHTML = items.map(it => `
       <div class="low-item">
         <div class="low-info">
-          <div class="low-code">${esc(it.MaNL)}</div>
-          <div class="low-name">${esc(it.TenNL)}</div>
-          <div class="low-stock">Tồn: ${it.TonHienTai} ${esc(it.DonVi)} / Tối thiểu: ${it.TonToiThieu}</div>
+          <div class="low-code">${esc(it['Mã NL'])}</div>
+          <div class="low-name">${esc(it['Tên NL'])}</div>
+          <div class="low-stock">Tồn: ${it['Tồn hiện tại']} ${esc(it['Đơn vị'])} / Tối thiểu: ${it['Tồn tối thiểu']}</div>
         </div>
         <div class="low-badge">⚠️ Sắp Hết</div>
       </div>
@@ -304,18 +304,18 @@ const App = (() => {
       return;
     }
     list.innerHTML = history.map(h => {
-      const cls  = typeClass(h.Loai);
-      const icon = typeIcon(h.Loai);
-      const sign = h.Loai === 'NHAP' ? '+' : (h.Loai === 'XUAT' ? '-' : '');
-      const time = h.ThoiGian ? fmtTime(new Date(h.ThoiGian)) : '—';
+      const cls  = typeClass(h['Loại']);
+      const icon = typeIcon(h['Loại']);
+      const sign = h['Loại'] === 'NHAP' ? '+' : (h['Loại'] === 'XUAT' ? '-' : '');
+      const time = h['Thời gian'] ? fmtTime(new Date(h['Thời gian'])) : '—';
       return `
         <div class="activity-item">
           <div class="act-dot ${cls}">${icon}</div>
           <div class="act-body">
-            <div class="act-name">${esc(h.TenNL || h.MaNL)}</div>
-            <div class="act-meta">${esc(h.MaNL)} · ${time}${h.NhanVien ? ' · ' + esc(h.NhanVien) : ''}</div>
+            <div class="act-name">${esc(h['Tên NL'] || h['Mã NL'])}</div>
+            <div class="act-meta">${esc(h['Mã NL'])} · ${time}${h['Nhân viên'] ? ' · ' + esc(h['Nhân viên']) : ''}</div>
           </div>
-          <div class="act-qty ${cls}">${sign}${h.SoLuong}</div>
+          <div class="act-qty ${cls}">${sign}${h['Số lượng']}</div>
         </div>`;
     }).join('');
   }
@@ -437,10 +437,10 @@ const App = (() => {
   function showScanResult(item) {
     S.scannedItem = item;
     const panel = document.getElementById('scan-result');
-    document.getElementById('scan-res-code').textContent  = item.MaNL;
-    document.getElementById('scan-res-name').textContent  = item.TenNL;
-    document.getElementById('scan-res-unit').textContent  = item.DonVi;
-    document.getElementById('scan-res-stock').textContent = item.TonHienTai + ' ' + item.DonVi;
+    document.getElementById('scan-res-code').textContent  = item['Mã NL'];
+    document.getElementById('scan-res-name').textContent  = item['Tên NL'];
+    document.getElementById('scan-res-unit').textContent  = item['Đơn vị'];
+    document.getElementById('scan-res-stock').textContent = item['Tồn hiện tại'] + ' ' + item['Đơn vị'];
     document.getElementById('scan-qty').value = '';
     document.getElementById('scan-qty-exp') && (document.getElementById('scan-qty-exp').value = '');
     document.getElementById('scan-note').value = '';
@@ -470,9 +470,9 @@ const App = (() => {
     try {
       let res;
       if (mode === 'stocktake') {
-        res = await apiCall({ action:'submitStocktake', code: item.MaNL, actualQuantity: qty, staff: S.staffName, note });
+        res = await apiCall({ action:'submitStocktake', code: item['Mã NL'], actualQuantity: qty, staff: S.staffName, note });
       } else {
-        res = await apiCall({ action:'updateStock', code: item.MaNL, type:'XUAT', quantity: qty, staff: S.staffName, note });
+        res = await apiCall({ action:'updateStock', code: item['Mã NL'], type:'XUAT', quantity: qty, staff: S.staffName, note });
       }
 
       if (res.error) { toast(res.error, 'error'); return; }
@@ -504,10 +504,10 @@ const App = (() => {
   function showImportResult(item) {
     S.importItem = item;
     const panel = document.getElementById('import-result');
-    document.getElementById('import-res-code').textContent  = item.MaNL;
-    document.getElementById('import-res-name').textContent  = item.TenNL;
-    document.getElementById('import-res-unit').textContent  = item.DonVi;
-    document.getElementById('import-res-stock').textContent = item.TonHienTai + ' ' + item.DonVi;
+    document.getElementById('import-res-code').textContent  = item['Mã NL'];
+    document.getElementById('import-res-name').textContent  = item['Tên NL'];
+    document.getElementById('import-res-unit').textContent  = item['Đơn vị'];
+    document.getElementById('import-res-stock').textContent = item['Tồn hiện tại'] + ' ' + item['Đơn vị'];
     document.getElementById('import-qty').value  = '';
     document.getElementById('import-note').value = '';
     panel.style.display = '';
@@ -530,9 +530,9 @@ const App = (() => {
     setBtnLoading(btn, true);
 
     try {
-      const res = await apiCall({ action:'updateStock', code: S.importItem.MaNL, type:'NHAP', quantity: qty, staff: S.staffName, note });
+      const res = await apiCall({ action:'updateStock', code: S.importItem['Mã NL'], type:'NHAP', quantity: qty, staff: S.staffName, note });
       if (res.error) { toast(res.error, 'error'); return; }
-      toast(`Đã nhập ${qty} ${S.importItem.DonVi} ${S.importItem.TenNL}`, 'success');
+      toast(`Đã nhập ${qty} ${S.importItem['Đơn vị']} ${S.importItem['Tên NL']}`, 'success');
       closeImportResult();
       if (S.scanners['import']) {
         try { S.scanners['import'].resume(); } catch(e) {}
@@ -570,23 +570,23 @@ const App = (() => {
     }
 
     list.innerHTML = items.map(it => {
-      const isLow  = it.TonToiThieu > 0 && it.TonHienTai <= it.TonToiThieu;
-      const isCrit = it.TonToiThieu > 0 && it.TonHienTai <= it.TonToiThieu * 0.5;
+      const isLow  = it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu'];
+      const isCrit = it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu'] * 0.5;
       const stockCls = isCrit ? 'crit' : (isLow ? 'low' : 'ok');
-      const initials = it.MaNL.slice(0,3).toUpperCase();
+      const initials = it['Mã NL'].slice(0,3).toUpperCase();
       return `
-        <div class="inv-item ${isLow ? 'low' : ''}" onclick="App.showItemModal('${esc(it.MaNL)}')">
+        <div class="inv-item ${isLow ? 'low' : ''}" onclick="App.showItemModal('${esc(it['Mã NL'])}')">
           <div class="inv-code-badge">
             <span class="icb-code">${esc(initials)}</span>
             <span class="icb-icon">📦</span>
           </div>
           <div class="inv-body">
-            <div class="inv-name">${esc(it.TenNL)}</div>
-            <div class="inv-unit">${esc(it.MaNL)} · ${esc(it.DonVi)}${isLow ? ' · ⚠️' : ''}</div>
+            <div class="inv-name">${esc(it['Tên NL'])}</div>
+            <div class="inv-unit">${esc(it['Mã NL'])} · ${esc(it['Đơn vị'])}${isLow ? ' · ⚠️' : ''}</div>
           </div>
           <div class="inv-stock-block">
-            <div class="inv-stock-val ${stockCls}">${it.TonHienTai}</div>
-            <div class="inv-stock-unit">${esc(it.DonVi)}</div>
+            <div class="inv-stock-val ${stockCls}">${it['Tồn hiện tại']}</div>
+            <div class="inv-stock-unit">${esc(it['Đơn vị'])}</div>
           </div>
         </div>`;
     }).join('');
@@ -598,14 +598,14 @@ const App = (() => {
 
     if (q) {
       items = items.filter(it =>
-        it.MaNL.toLowerCase().includes(q) ||
-        it.TenNL.toLowerCase().includes(q)
+        it['Mã NL'].toLowerCase().includes(q) ||
+        it['Tên NL'].toLowerCase().includes(q)
       );
     }
     if (S.filterStatus === 'low') {
-      items = items.filter(it => it.TonToiThieu > 0 && it.TonHienTai <= it.TonToiThieu);
+      items = items.filter(it => it['Tồn tối thiểu'] > 0 && it['Tồn hiện tại'] <= it['Tồn tối thiểu']);
     } else if (S.filterStatus === 'ok') {
-      items = items.filter(it => it.TonToiThieu === 0 || it.TonHienTai > it.TonToiThieu);
+      items = items.filter(it => it['Tồn tối thiểu'] === 0 || it['Tồn hiện tại'] > it['Tồn tối thiểu']);
     }
     renderInventoryList(items);
   }
@@ -621,42 +621,42 @@ const App = (() => {
      ITEM MODAL
   ───────────────────────────────────── */
   function showItemModal(code) {
-    const item = S.allItems.find(it => it.MaNL === code);
+    const item = S.allItems.find(it => it['Mã NL'] === code);
     if (!item) return;
     S.modalItem = item;
 
-    document.getElementById('item-modal-title').textContent = item.TenNL;
+    document.getElementById('item-modal-title').textContent = item['Tên NL'];
 
-    const isLow = item.TonToiThieu > 0 && item.TonHienTai <= item.TonToiThieu;
-    const stockCls = isLow ? 'is-current' + (item.TonHienTai <= 0 ? ' is-min' : '') : 'is-current';
+    const isLow = item['Tồn tối thiểu'] > 0 && item['Tồn hiện tại'] <= item['Tồn tối thiểu'];
+    const stockCls = isLow ? 'is-current' + (item['Tồn hiện tại'] <= 0 ? ' is-min' : '') : 'is-current';
 
     document.getElementById('item-modal-body').innerHTML = `
       <div class="item-detail">
         <div class="item-detail-header">
           <div class="item-code-circle">
-            <span class="icc-code">${esc(item.MaNL)}</span>
+            <span class="icc-code">${esc(item['Mã NL'])}</span>
             <span class="icc-icon">📦</span>
           </div>
           <div>
-            <div class="item-d-name">${esc(item.TenNL)}</div>
-            <div class="item-d-unit">Đơn vị: ${esc(item.DonVi)}${isLow ? ' · ⚠️ Sắp hết' : ''}</div>
+            <div class="item-d-name">${esc(item['Tên NL'])}</div>
+            <div class="item-d-unit">Đơn vị: ${esc(item['Đơn vị'])}${isLow ? ' · ⚠️ Sắp hết' : ''}</div>
           </div>
         </div>
         <div class="item-stat-row">
           <div class="item-stat">
-            <div class="is-val ${stockCls}">${item.TonHienTai}</div>
+            <div class="is-val ${stockCls}">${item['Tồn hiện tại']}</div>
             <div class="is-label">Tồn Hiện Tại</div>
           </div>
           <div class="item-stat">
-            <div class="is-val is-min">${item.TonToiThieu || '—'}</div>
+            <div class="is-val is-min">${item['Tồn tối thiểu'] || '—'}</div>
             <div class="is-label">Tối Thiểu</div>
           </div>
           <div class="item-stat">
-            <div class="is-val is-max">${item.TonToiDa || '—'}</div>
+            <div class="is-val is-max">${item['Tồn tối đa'] || '—'}</div>
             <div class="is-label">Tối Đa</div>
           </div>
         </div>
-        ${item.GhiChu ? `<div class="item-note">📝 ${esc(item.GhiChu)}</div>` : ''}
+        ${item['Ghi chú'] ? `<div class="item-note">📝 ${esc(item['Ghi chú'])}</div>` : ''}
       </div>`;
     document.getElementById('item-overlay').style.display = 'flex';
   }
@@ -667,13 +667,13 @@ const App = (() => {
 
   async function deleteItem() {
     if (!S.modalItem) return;
-    if (!confirm(`Xoá "${S.modalItem.TenNL}" (${S.modalItem.MaNL})?`)) return;
+    if (!confirm(`Xoá "${S.modalItem['Tên NL']}" (${S.modalItem['Mã NL']})?`)) return;
     try {
-      const res = await apiCall({ action:'deleteItem', code: S.modalItem.MaNL });
+      const res = await apiCall({ action:'deleteItem', code: S.modalItem['Mã NL'] });
       if (res.error) { toast(res.error, 'error'); return; }
-      toast('Đã xoá ' + S.modalItem.TenNL, 'success');
+      toast('Đã xoá ' + S.modalItem['Tên NL'], 'success');
       closeItemModal();
-      S.allItems = S.allItems.filter(it => it.MaNL !== S.modalItem.MaNL);
+      S.allItems = S.allItems.filter(it => it['Mã NL'] !== S.modalItem['Mã NL']);
       filterList();
     } catch(e) { toast('Lỗi: ' + e.message, 'error'); }
   }
@@ -683,17 +683,17 @@ const App = (() => {
     closeItemModal();
     navigate('admin');
     showTab('qr');
-    setTimeout(() => generateQRCode(S.modalItem.MaNL, S.modalItem.TenNL), 100);
+    setTimeout(() => generateQRCode(S.modalItem['Mã NL'], S.modalItem['Tên NL']), 100);
   }
 
   function openEditModal() {
     if (!S.modalItem) return;
     const it = S.modalItem;
-    document.getElementById('edit-code').value       = it.MaNL;
-    document.getElementById('edit-name').value       = it.TenNL;
-    document.getElementById('edit-unit').value       = it.DonVi;
-    document.getElementById('edit-min').value        = it.TonToiThieu || '';
-    document.getElementById('edit-note-val').value   = it.GhiChu || '';
+    document.getElementById('edit-code').value       = it['Mã NL'];
+    document.getElementById('edit-name').value       = it['Tên NL'];
+    document.getElementById('edit-unit').value       = it['Đơn vị'];
+    document.getElementById('edit-min').value        = it['Tồn tối thiểu'] || '';
+    document.getElementById('edit-note-val').value   = it['Ghi chú'] || '';
     closeItemModal();
     document.getElementById('edit-overlay').style.display = 'flex';
   }
@@ -777,7 +777,7 @@ const App = (() => {
 
   function applyHistFilter() {
     const type = document.getElementById('hist-filter').value;
-    const filtered = type ? S.history.filter(h => h.Loai === type) : S.history;
+    const filtered = type ? S.history.filter(h => h['Loại'] === type) : S.history;
     renderHistory(filtered);
   }
 
@@ -788,19 +788,19 @@ const App = (() => {
       return;
     }
     list.innerHTML = history.map(h => {
-      const cls  = typeClass(h.Loai);
-      const icon = typeIcon(h.Loai);
-      const sign = h.Loai === 'NHAP' ? '+' : (h.Loai === 'XUAT' ? '-' : '');
-      const time = h.ThoiGian ? fmtTime(new Date(h.ThoiGian)) : '—';
+      const cls  = typeClass(h['Loại']);
+      const icon = typeIcon(h['Loại']);
+      const sign = h['Loại'] === 'NHAP' ? '+' : (h['Loại'] === 'XUAT' ? '-' : '');
+      const time = h['Thời gian'] ? fmtTime(new Date(h['Thời gian'])) : '—';
       return `
         <div class="hist-item">
           <div class="hist-type-badge ${cls}">${icon}</div>
           <div class="hist-body">
-            <div class="hist-code">${esc(h.MaNL)} · ${fmtLoai(h.Loai)}</div>
-            <div class="hist-name">${esc(h.TenNL || h.MaNL)}</div>
-            <div class="hist-time">${time}${h.NhanVien ? ' · ' + esc(h.NhanVien) : ''}</div>
+            <div class="hist-code">${esc(h['Mã NL'])} · ${fmtLoai(h['Loại'])}</div>
+            <div class="hist-name">${esc(h['Tên NL'] || h['Mã NL'])}</div>
+            <div class="hist-time">${time}${h['Nhân viên'] ? ' · ' + esc(h['Nhân viên']) : ''}</div>
           </div>
-          <div class="hist-qty ${cls}">${sign}${h.SoLuong}</div>
+          <div class="hist-qty ${cls}">${sign}${h['Số lượng']}</div>
         </div>`;
     }).join('');
   }
@@ -811,7 +811,7 @@ const App = (() => {
   function populateQRSelect() {
     const sel = document.getElementById('qr-select');
     if (!sel) return;
-    const opts = S.allItems.map(it => `<option value="${esc(it.MaNL)}" data-name="${esc(it.TenNL)}">${esc(it.MaNL)} — ${esc(it.TenNL)}</option>`).join('');
+    const opts = S.allItems.map(it => `<option value="${esc(it['Mã NL'])}" data-name="${esc(it['Tên NL'])}">${esc(it['Mã NL'])} — ${esc(it['Tên NL'])}</option>`).join('');
     sel.innerHTML = '<option value="">— Chọn nguyên liệu —</option>' + opts;
   }
 
@@ -827,8 +827,8 @@ const App = (() => {
   function genQRManual() {
     const code = document.getElementById('qr-code-input').value.trim().toUpperCase();
     if (!code) { toast('Nhập mã nguyên liệu', 'error'); return; }
-    const item = S.allItems.find(it => it.MaNL.toUpperCase() === code);
-    generateQRCode(code, item ? item.TenNL : code);
+    const item = S.allItems.find(it => it['Mã NL'].toUpperCase() === code);
+    generateQRCode(code, item ? item['Tên NL'] : code);
   }
 
   function generateQRCode(code, name) {
@@ -889,13 +889,13 @@ const App = (() => {
     S.allItems.forEach((item, idx) => {
       const div = document.createElement('div');
       div.className = 'print-qr-item';
-      div.innerHTML = `<div class="pqi-code">${esc(item.MaNL)}</div><div class="pqi-name">${esc(item.TenNL)}</div>`;
+      div.innerHTML = `<div class="pqi-code">${esc(item['Mã NL'])}</div><div class="pqi-name">${esc(item['Tên NL'])}</div>`;
       const qrDiv = document.createElement('div');
       div.appendChild(qrDiv);
       grid.appendChild(div);
 
       new QRCode(qrDiv, {
-        text: item.MaNL, width: 100, height: 100,
+        text: item['Mã NL'], width: 100, height: 100,
         colorDark: '#000', colorLight: '#fff',
         correctLevel: QRCode.CorrectLevel.H,
       });
