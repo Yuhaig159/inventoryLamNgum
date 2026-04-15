@@ -9,7 +9,7 @@ const App = (() => {
      STATE
   ───────────────────────────────────── */
   const S = {
-    gasUrl:      '',
+    gasUrl:      'https://script.google.com/macros/s/AKfycbxEdzFJnDXPjAWnUeTQAOjjN6HhGW-xb8ThnuGEzHx0rfl1fqFre5Zfgb8tYUpicVBMbQ/exec',
     storeName:   'KhoQR',
     staffName:   '',
     currentPage: 'dashboard',
@@ -45,7 +45,7 @@ const App = (() => {
   ───────────────────────────────────── */
   function init() {
     // Load settings
-    S.gasUrl    = ls('gasUrl')    || '';
+    S.gasUrl    = ls('gasUrl')    || S.gasUrl;
     S.storeName = ls('storeName') || 'KhoQR';
     S.staffName = ls('staffName') || '';
     S.isDemo    = ls('isDemo') === '1';
